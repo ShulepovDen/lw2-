@@ -159,6 +159,7 @@ function validator(_value) {
         this.isValid = true;
       }
       return this;
+      g;
     },
     isFloat: function () {
       if (!isNaN(parseFloat(this.value))) {
