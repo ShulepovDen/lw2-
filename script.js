@@ -7,28 +7,14 @@ var userDatabase = []; // массив с зарегистрированными
 
 function register(email, password) {
   var user = {};
-  if (
-    email.indexOf(" ") > -1 ||
-    email.indexOf("@") < 1 ||
-    email.length === 0 ||
-    email.match(/\./g).length !== 1 ||
-    email.match(/\@/g).length !== 1 ||
-    email.slice(email.indexOf("@") + 1, email.indexOf(".")).length === 0 ||
-    email.substr(email.indexOf(".")).length === 1
-  ) {
+  if (!isValidEmailAndPassword(email, password)) {
     return false;
   }
-
-  if (password.match(/^[A-ZА-Я](?=.*[0-9])/) === null || password.length < 6) {
-    return false;
-  }
-  user.mail = email;
-  user.pass = password;
 
   for (i = 0; i < userDatabase.length; i++) {
     if (userDatabase[i].mail === email) return false;
   }
-  userDatabase.push(user);
+  userDatabase.push({ mail: email, pass: password });
   // ваш код
   // проверка на валидность email, пароля (6 символов, начинается с большой буквы, должен содержать как минимум 1 цифру)
   // проверка нового пользователя в userDatabase
@@ -36,30 +22,12 @@ function register(email, password) {
 }
 
 function signIn(email, password) {
-  var user = {};
-  if (
-    email.indexOf(" ") > -1 ||
-    email.indexOf("@") < 1 ||
-    email.length === 0 ||
-    email.match(/\./g).length !== 1 ||
-    email.match(/\@/g).length !== 1 ||
-    email.slice(email.indexOf("@") + 1, email.indexOf(".")).length === 0 ||
-    email.substr(email.indexOf(".")).length === 1
-  ) {
+  if (!isValidEmailAndPassword(email, password)) {
     return false;
   }
-
-  if (password.match(/^[A-ZА-Я](?=.*[0-9])/) === null || password.length < 6) {
-    return false;
-  }
-  user.mail = email;
-  user.pass = password;
   for (i = 0; i < userDatabase.length; i++) {
-    if (
-      userDatabase[i].mail === user.mail &&
-      userDatabase[i].pass === user.pass
-    ) {
-      authUserData = user;
+    if (userDatabase[i].mail === email && userDatabase[i].pass === password) {
+      authUserData = { mail: email, pass: password };
     }
   }
   // ваш код
@@ -74,22 +42,14 @@ function signOut() {
 }
 
 function resetPassword(email, oldPassword, newPassword) {
-  var user = {};
-  user.mail = email;
-  user.pass = oldPassword;
   for (i = 0; i < userDatabase.length; i++) {
     if (
-      userDatabase[i].mail === user.mail &&
-      userDatabase[i].pass === user.pass
+      userDatabase[i].mail === email &&
+      userDatabase[i].pass === oldPassword &&
+      validator(newPassword).isValidPassword().validate()
     ) {
-      if (
-        newPassword.match(/^[A-ZА-Я](?=.*[0-9])/) !== null &&
-        newPassword.length >= 6
-      ) {
-        user.pass = newPassword;
-        console.log("as");
-        userDatabase[i].pass = user.pass;
-      }
+      oldPassword = newPassword;
+      userDatabase[i].pass = oldPassword;
     }
   }
   // функция восстановления пароля
@@ -102,6 +62,16 @@ function isAuth() {
   }
   return true;
   // функция возвращает true если пользователь авторизован, false если нет
+}
+function isValidEmailAndPassword(email, password) {
+  if (!validator(email).isEmail().validate()) {
+    return false;
+  }
+
+  if (!validator(password).isValidPassword().validate()) {
+    return false;
+  }
+  return true;
 }
 
 function validator(_value) {
@@ -144,32 +114,20 @@ function validator(_value) {
       return this;
     },
     isEmail: function () {
-      if (
-        this.value.indexOf(" ") > -1 ||
-        this.value.indexOf("@") < 1 ||
-        this.value.length === 0 ||
-        this.value.match(/\./g).length !== 1 ||
-        this.value.match(/\@/g).length !== 1 ||
-        this.value.slice(this.value.indexOf("@") + 1, this.value.indexOf("."))
-          .length === 0 ||
-        this.value.substr(this.value.indexOf(".")).length === 1
-      ) {
-        this.isValid = false;
-      } else {
+      if (this.value.match(/^[\w-.]+@[\w-]+.[a-z]{2,4}$/)) {
         this.isValid = true;
+      } else {
+        this.isValid = false;
       }
       return this;
       g;
     },
     isFloat: function () {
-      if (!isNaN(parseFloat(this.value))) {
-        let stringNumber = this.value.toString();
-        let isFloat = stringNumber.indexOf(".");
-        if (isFloat !== -1) {
-          this.isValid = true;
-        } else {
-          this.isValid = false;
-        }
+      if (
+        !isNaN(parseFloat(this.value)) &&
+        this.value.toString().indexOf(".") !== -1
+      ) {
+        this.isValid = true;
       } else {
         this.isValid = false;
       }
@@ -178,6 +136,17 @@ function validator(_value) {
     isDate: function () {
       let result = this.value.match(/\d{2}\.\d{2}\.\d{4}/);
       if (result != null) {
+        this.isValid = true;
+      } else {
+        this.isValid = false;
+      }
+      return this;
+    },
+    isValidPassword: function () {
+      if (
+        this.value.match(/^[A-ZА-Я](?=.*[0-9])/) !== null &&
+        this.value.length >= 6
+      ) {
         this.isValid = true;
       } else {
         this.isValid = false;
